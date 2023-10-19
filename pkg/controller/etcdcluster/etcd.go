@@ -20,7 +20,6 @@ package etcdcluster
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"reflect"
 	"sort"
@@ -575,21 +574,6 @@ func (c *Cluster) ensureCert() error {
 	return nil
 }
 
-// saveToAnnotation 将 tapp 序列化后，保存到自己的 annotation 中。目的是为了保留完整的 ObjectMeta 供 tapp controller 读取
-func saveToAnnotation(tapp *tAppV1.TApp) error {
-
-	data, err := json.Marshal(tapp)
-	if err != nil {
-		return err
-	}
-
-	if tapp.Annotations == nil {
-		tapp.Annotations = make(map[string]string)
-	}
-	tapp.Annotations["tapp.tkestack.io/json"] = string(data)
-	return nil
-}
-
 func (c *Cluster) ensureTApp() error {
 	e := c.etcd
 
@@ -601,12 +585,6 @@ func (c *Cluster) ensureTApp() error {
 	// create if not exist
 	existTApp, err := c.tAppLister.TApps(tapp.Namespace).Get(tapp.Name)
 	if err != nil && k8serr.IsNotFound(err) {
-
-		err := saveToAnnotation(tapp)
-		if err != nil {
-			return err
-		}
-
 		if _, err := c.tAppClient.TappcontrollerV1().TApps(tapp.Namespace).Create(context.TODO(), tapp, metav1.CreateOptions{}); err != nil {
 			return err
 		}
